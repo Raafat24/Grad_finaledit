@@ -7,9 +7,13 @@ from django.contrib.auth.models import User
 from datetime import date,datetime
 class semester_name(models.Model):
     name=models.CharField(max_length=10)
+    def __str__(self) :
+            return  str(self.name)  
 class Level (models.Model):
     level =models.CharField(max_length=50)
     semester_name=models.ForeignKey(semester_name,on_delete=models.CASCADE,null=True)
+    def __str__(self) :
+            return  str(self.level)    
 class University( models.Model):
     name =models.CharField(max_length=50)
     no_university_courses_required = models.IntegerField()
@@ -30,6 +34,7 @@ class College(models.Model):
     name =models.CharField(max_length=50)
     number_of_required_optional_course = models.IntegerField(default=2)
     university= models.ForeignKey(University,on_delete=models.CASCADE,null=True)
+    number_of_levels= models.IntegerField()
     def __str__(self) :
             return  str(self.name)
 
@@ -61,7 +66,14 @@ class Course(models.Model):
     preRequst =models.ManyToManyField('self',blank=True, symmetrical=False)
     def __str__(self) :
             return  str(self.code)
+class LevelRequirement(models.Model):
+    college= models.ForeignKey(College,on_delete=models.CASCADE, null=True)
+    level = models.ForeignKey(Level, on_delete=models.CASCADE, null=True)
+    number_of_required_optional_courses = models.IntegerField(default=2)
+    # يمكنك أيضًا إضافة المزيد من الحقول الخاصة بالشروط هنا
 
+    def __str__(self):
+        return f"{self.level.level} - {self.number_of_required_optional_courses} courses"
 
 class Student (models.Model):
     university_ID=models.CharField(max_length=50,null=True,db_index=True)
