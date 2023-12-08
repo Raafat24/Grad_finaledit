@@ -849,3 +849,37 @@ def get_recomended_for_student(student_id,remaining_courses):
                 less_level.append(course)
     return same_level ,less_level
 
+def levels_with_requirements():
+    # استعلام يسترجع جميع المستويات التي تحتوي على شروط
+    levels_with_requirements = Level.objects.filter(levelrequirement__isnull=False).distinct()
+    level_for_students()
+    # for level in levels_with_requirements:
+    #     level_requirement = level.levelrequirement_set.first()
+    #      # افتراضيًا، لاحتمال وجود أكثر من LevelRequirement لنفس المستوى
+    #     if level_requirement:
+    #         print(f"Level: {level.level}")
+    #         print(f"Number of required/optional courses: {level_requirement.number_of_required_optional_courses}")
+    #         print("-" * 30)
+def level_for_spacific_student(student_id):
+    student = Student.objects.get(university_ID= student_id)
+    hours_count =student.Hours_count
+    college = student.major.department.college
+    # الحصول على المستويات التي تحتوي على شروط للكلية المحددة
+    levels_with_requirements = Level.objects.filter(
+        levelrequirement__isnull=False,
+        levelrequirement__college=college
+    ).distinct()
+    student_level = None
+    for level in levels_with_requirements:
+        level_requirement = level.levelrequirement_set.first()
+        if level_requirement.number_of_required_optional_courses <= hours_count:
+            student_level = level
+    level_student = Level.objects.get(level=student_level)
+    student.level=level_student
+    student.save()
+
+def level_for_students():
+    students= Student.objects.all()
+    for student in students:
+         level_for_spacific_student(student.university_ID)
+
