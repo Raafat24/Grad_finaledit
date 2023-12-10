@@ -6,7 +6,7 @@ from .views import *
 urlpatterns = [
     path('elective/',elective     , name='elective'),
     path('test/',test     , name='test'),
-    path('',home     , name='home'),
+    path('',students     , name='home'),
     path('courses/',courses , name='courses'),
     path('general/',general , name='general'),
     path('college/',college , name='college'),
@@ -22,6 +22,8 @@ urlpatterns = [
     path('student-details/<str:student_id>/',student_details, name='student_details'),
     path('add_major/',save_major, name='save_major'),
     path('add_course/',save_course, name='save_course'),
+    path('insert_excelFile',insert_excelFile,name='insert_excelFile'),
+    path('logout/', logout_view, name='logout'),
 
 
 ]

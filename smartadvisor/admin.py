@@ -59,3 +59,4 @@ class AdvisorAdmin(admin.ModelAdmin):
 admin.site.register(Advisor, AdvisorAdmin)
 # سجل نموذج المستخدم مع واجهة مخصصة
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(Major)

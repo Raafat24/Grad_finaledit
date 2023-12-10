@@ -129,6 +129,7 @@ def get_students_details(student_id):
     if float(student.GPA) >2.00 :
         conditional_passed = set(remaining_courses_for_student) & set(conditional_courses)
         remaining_courses_for_student = set(remaining_courses_for_student) - conditional_passed
+        completed_courses  = set(completed_courses).union(set(conditional_courses))     
     for code in completed_courses :
         course = None
         try :
@@ -177,7 +178,16 @@ def get_students_details(student_id):
         optional_map['elective']=(elective_complete, {'remaining ':number_elective- len(elective_complete),
                                                       'remaining_course':elective_remaining
                                                       })
-
+    for course in fail_courses:
+        if course in completed_courses:
+            fail_courses.remove(course)
+            fail_passed.append(course)
+    for course in conditional_courses:
+        if course in completed_courses:
+            conditional_courses.remove(course)
+    print(remaining_courses_for_student)
+    print(completed_courses)
+    print('fail_courses',fail_courses)
     return list(remaining_courses_for_student),set( completed_courses), set(conditional_courses), set(fail_courses) , set(fail_passed),optional_map
 def courses_with_remaining_students():
     courses_map = {}  
@@ -376,6 +386,7 @@ def calculate_gpa(student_id):
                 university_course = University_Courses.objects.get(code=course_code)
                 degree_numeric = float(highest_degree[course_code])
                 for course_history in Course_History.objects.filter(student=student, universit_course=university_course):
+                    print(course_history.degree)
                     degree_numeric = float(max(degree_numeric, letter_grade_to_numeric(course_history.degree)))
                     highest_degree[course_code] = float(degree_numeric)
                     course_credits[course_code] = float(university_course.credit)
@@ -661,24 +672,32 @@ def all_optinal_courses():
     collection2.insert_one(university_map)
     return university_map, college_map
 def insert_excel_file():
-    studentFile = pd.read_excel('./static/excel/student.xlsx')
-    historyFile = pd.read_excel('./static/excel/history.xlsx')
+    studentFile = pd.read_excel('./static/excel/itstudents.xlsx')
+    historyFile = pd.read_excel('./static/excel/itstudents.xlsx')
     Course_History.objects.all().delete()
     Student.objects.all().delete()
-    major=Major.objects.get(id=1)
     for index, row in studentFile.iterrows():
+
         if not Student.objects.filter(university_ID=row['ID']).exists():
             student = Student()
             student.university_ID = row['ID']
             student.name= row['الاسم']
             student.GPA = 0  # قيمة افتراضية لل GPA يمكنك تعديلها بناءً على البيانات الحقيقية
             student.Hours_count = 0
-            student.major=major  # قيمة افتراضية لعدد الساعات يمكنك تعديلها بناءً على البيانات الحقيقية
+            major_name = row['major']
+            try:    
+                    student.major = Major.objects.get(name=major_name)
+            except Major.DoesNotExist:
+            # إذا لم يتم العثور على اختصاص، قم بإنشاء اختصاص جديد بقيمة افتراضية (مثل القيمة 3)
+                student.major = Major.objects.get(id=3)   # قيمة افتراضية لعدد الساعات يمكنك تعديلها بناءً على البيانات الحقيقية
             student.save()
+            
     for index , row in historyFile.iterrows():
         course_History = Course_History()
         student= Student.objects.get(university_ID=row['ID'])
         if row['Grade']=='-':
+            continue
+        if row['Grade']=='I':
             continue
         course = None
         try:
@@ -771,24 +790,22 @@ def getCourseswithstudents(semester):
 
         for student in students:
             remaining_courses, completed_courses, conditional_courses, fail_courses, _, optional_map = get_students_details(student.university_ID)
-
-            if course.code in remaining_courses and  student.level != course.level and student not in graduated_students and check_prerequist(course.code,student.university_ID) and int(student.Hours_count) >= int(course.hours_condition):
-                combine_map['students'].append(student)
-                students_data['students'].append(student.university_ID)
+            if course.code in fail_courses and  student.university_ID not in  graduated_students:
+                combine_map['fault'].append(student)
+                students_data['fault'].append(student.university_ID)
                 continue
             elif course.code in remaining_courses and student.level == course.level and student not in graduated_students and check_prerequist(course.code,student.university_ID)and  int(student.Hours_count) >= int(course.hours_condition):
                 combine_map['same_level'].append(student)
                 students_data['same_level'].append(student.university_ID)
                 continue
-            elif course.code in fail_courses and  student.university_ID not in  graduated_students:
-                combine_map['fault'].append(student)
-                students_data['fault'].append(student.university_ID)
-                continue
             elif course.code in conditional_courses and student.university_ID not in graduated_students:
                 combine_map['condition'].append(student)
                 students_data['condition'].append(student.university_ID)
                 continue
-
+            elif course.code in remaining_courses and  student.level != course.level and student not in graduated_students and check_prerequist(course.code,student.university_ID) and int(student.Hours_count) >= int(course.hours_condition):
+                combine_map['students'].append(student)
+                students_data['students'].append(student.university_ID)
+                continue
             elif course.code in remaining_courses and student in graduated_students and check_prerequist(course.code,student.university_ID):
                 combine_map['graduate'].append(student)
                 students_data['graduate'].append(student.university_ID)
@@ -853,13 +870,7 @@ def levels_with_requirements():
     # استعلام يسترجع جميع المستويات التي تحتوي على شروط
     levels_with_requirements = Level.objects.filter(levelrequirement__isnull=False).distinct()
     level_for_students()
-    # for level in levels_with_requirements:
-    #     level_requirement = level.levelrequirement_set.first()
-    #      # افتراضيًا، لاحتمال وجود أكثر من LevelRequirement لنفس المستوى
-    #     if level_requirement:
-    #         print(f"Level: {level.level}")
-    #         print(f"Number of required/optional courses: {level_requirement.number_of_required_optional_courses}")
-    #         print("-" * 30)
+
 def level_for_spacific_student(student_id):
     student = Student.objects.get(university_ID= student_id)
     hours_count =student.Hours_count

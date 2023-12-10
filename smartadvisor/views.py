@@ -18,20 +18,11 @@ database = client["advisor"]
 
 def test(request):
     all_course_names=[]
-    # insertStudentMajor()
     courses_map={}
     start_time = timezone.now()
     map = getCourseswithstudents(1)
-#     for student in Student.objects.all():
-#         remaining_courses,_,_,_,_,_= get_students_details(student.university_ID)
-#         all_course_names.extend(remaining_courses)
-#     course_counter = Counter(all_course_names)
-#     counter = 0 
-# # التحقق من أسماء المواد التي تكررت على الأقل 20 مرة
-#     for course, count in course_counter.items():
-#         if count >= 20:
-#             print(f" {counter} The course {course} is needed by at least 20 students.{count}")
-#             counter =counter+1
+    all_graduate_courses()
+    university_map, college_map=all_optinal_courses()
     end_time = timezone.now()
     print(len(all_course_names))
     elapsed_time = end_time - start_time
@@ -47,8 +38,6 @@ def test(request):
     return render(request, 'test/test.html', context)
 def elective(request):
     electivemap={}
-    all_graduate_courses()
-    university_map, college_map=all_optinal_courses()
     collection = database["elective"]
     result = collection.find({}, {"_id": 0})
     for r in result:
@@ -164,6 +153,7 @@ def student_on_course (request,course , key):
         }
         return render (request,'students/students.html', context)
 def help(request):
+    get_students_details('201810593')
     if request.method == 'POST' and request.FILES.get('excelFile'):
         uploaded_file = request.FILES['excelFile']
         with open('static/excel/' + uploaded_file.name, 'wb+') as destination:
@@ -177,9 +167,16 @@ def college(request):
 def department(request):
     return render (request,'department/department.html')
 def major(request):
-    return render (request,'major/major.html')
+    majors=Major.objects.all()
+    print(majors)
+    context={
+        'majors':majors
+    }
+    return render (request,'major/major.html',context)
 @login_required(login_url='login')
 def students(request):
+    if request.user.is_staff:
+        logout(request)
     user = request.user
     
     students = Student.objects.filter(major__department=user.advisor.department )
@@ -363,5 +360,13 @@ def save_course(request):
             ).majors.add(major)
 
         return render(request, 'major/major.html', context)
-
-
+@csrf_exempt 
+def insert_excelFile(request):
+    # insert_excel_file()
+    # calcGpaForAllStydents()
+    level_for_students()
+    return render(request, 'help/help.html', {'uploaded_success': False})
+def logout_view(request):
+    logout(request)
+    # قد ترغب في توجيه المستخدم إلى صفحة معينة بعد تسجيل الخروج، على سبيل المثال:
+    return redirect('login')

@@ -53,6 +53,8 @@ class Major(models.Model):
             return  str(self.name)    
 class Course_Type (models.Model):
     typeOfCourse =models.CharField(max_length=50)
+    def __str__(self) :
+            return  str(self.typeOfCourse)     
 class Course(models.Model):
     name =models.CharField(max_length=50)
     code=models.CharField(max_length=20,db_index=True)
