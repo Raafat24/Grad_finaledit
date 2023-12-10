@@ -185,9 +185,6 @@ def get_students_details(student_id):
     for course in conditional_courses:
         if course in completed_courses:
             conditional_courses.remove(course)
-    print(remaining_courses_for_student)
-    print(completed_courses)
-    print('fail_courses',fail_courses)
     return list(remaining_courses_for_student),set( completed_courses), set(conditional_courses), set(fail_courses) , set(fail_passed),optional_map
 def courses_with_remaining_students():
     courses_map = {}  

@@ -2,6 +2,7 @@ from django.shortcuts import render,redirect
 from .function import *
 from .algorithm import *
 from .models import *
+import os
 from django.http import JsonResponse
 import timeit
 from django.utils import timezone
@@ -21,9 +22,9 @@ def test(request):
     courses_map={}
     start_time = timezone.now()
     map = getCourseswithstudents(1)
+    end_time = timezone.now()
     all_graduate_courses()
     university_map, college_map=all_optinal_courses()
-    end_time = timezone.now()
     print(len(all_course_names))
     elapsed_time = end_time - start_time
     print(elapsed_time)
@@ -35,7 +36,12 @@ def test(request):
     context={
         'final_map' : courses_map
     }
-    return render(request, 'test/test.html', context)
+    if request.method == 'POST' and request.FILES.get('excelFile'):
+        uploaded_file = request.FILES['excelFile']
+        with open('static/excel/' + uploaded_file.name, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+    return render(request, 'help/help.html', {'uploaded_success': True})
 def elective(request):
     electivemap={}
     collection = database["elective"]
@@ -152,14 +158,35 @@ def student_on_course (request,course , key):
             'course':getcourse,
         }
         return render (request,'students/students.html', context)
+
 def help(request):
-    get_students_details('201810593')
-    if request.method == 'POST' and request.FILES.get('excelFile'):
+    if request.method == 'POST':
+        semester_level = request.POST.get('SemesterLevel')
         uploaded_file = request.FILES['excelFile']
-        with open('static/excel/' + uploaded_file.name, 'wb+') as destination:
+
+        # تحديد مسار مجلد التخزين
+        storage_path = 'static/excel/'
+
+        # حذف الملفات السابقة
+        for file_name in os.listdir(storage_path):
+            file_path = os.path.join(storage_path, file_name)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f"Error deleting file {file_path}: {e}")
+
+        # تخزين الملف الجديد
+        with open(os.path.join(storage_path, uploaded_file.name), 'wb+') as destination:
             for chunk in uploaded_file.chunks():
                 destination.write(chunk)
-    return render(request, 'help/help.html', {'uploaded_success': True})
+
+        print(semester_level)
+
+        # قد تقوم هنا بتحديث النموذج أو أداء أي عملية أخرى
+        return render(request, 'help/help.html', {'uploaded_success': True})
+
+    return render(request, 'help/help.html')
 def general(request):
     return render (request,'general/general.html')
 def college(request):
